@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Us",
+    "slug": "us-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./figma/heart-logo.svg",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./figma/heart-logo.svg",
+      "resizeMode": "contain",
+      "backgroundColor": "#F6EFE6"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.yourcompany.usapp",
+      "versionCode": 1
+    }
+  }
+}
