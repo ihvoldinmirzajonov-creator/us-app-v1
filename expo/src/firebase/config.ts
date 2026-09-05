@@ -1,9 +1,8 @@
-// Replace with your Firebase config values
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "SENDER_ID",
-  appId: "APP_ID"
+  apiKey: "AIzaSyCvt9uJLqBLni7WhzSCpEjsYrS69G3PUbk",
+  authDomain: "us-game-56d31.firebaseapp.com",
+  projectId: "us-game-56d31",
+  storageBucket: "us-game-56d31.appspot.com",
+  messagingSenderId: "848068184901",
+  appId: "1:848068184901:android:cb174996c2110d8c770c2c"
 };
