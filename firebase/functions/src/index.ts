@@ -3,41 +3,45 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 const db = admin.firestore();
 
-// Send invite email with token (implement email sending via SendGrid or similar)
 export const sendInvite = functions.https.onCall(async (data, context) => {
-  const { inviteEmail, inviterId } = data;
-  if (!context.auth || context.auth.uid !== inviterId) throw new functions.https.HttpsError("unauthenticated", "Not signed in");
-  const tokenRef = db.collection("invites").doc();
-  await tokenRef.set({ inviteEmail, inviterId, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-  return { inviteId: tokenRef.id };
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated','Not signed in');
+  const { inviteEmail } = data;
+  if (!inviteEmail) throw new functions.https.HttpsError('invalid-argument','Missing inviteEmail');
+  const inviteRef = db.collection('invites').doc();
+  await inviteRef.set({ inviteEmail, inviterId: context.auth.uid, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+  return { inviteId: inviteRef.id };
 });
 
-// When two users linked to same invite, create couple doc
 export const createCouple = functions.https.onCall(async (data, context) => {
-  // Implement server-side validation and atomic couple creation
-  return { success: true };
-});
+  if (!context.auth) throw new functions.https.HttpsError('unauthenticated','Not signed in');
+  const { inviteId } = data;
+  if (!inviteId) throw new functions.https.HttpsError('invalid-argument','Missing inviteId');
 
-// Trigger: on answer creation, check if both answers present and notify partner
-export const onAnswerCreated = functions.firestore
-  .document("answers/{answerId}")
-  .onCreate(async (snap, ctx) => {
-    const answer = snap.data();
-    if (!answer) return;
-    const q = answer.questionId;
-    const coupleId = answer.coupleId;
-    const answersSnap = await db.collection("answers")
-      .where("questionId", "==", q)
-      .where("coupleId", "==", coupleId)
-      .get();
-    const authors = new Set<string>();
-    answersSnap.forEach(a => authors.add(a.data().authorId));
-    if (authors.size >= 2) {
-      await db.collection("questionsStatus").doc(`${coupleId}_${q}`).set({ revealable: true }, { merge: true });
-    }
+  const inviteSnap = await db.collection('invites').doc(inviteId).get();
+  if (!inviteSnap.exists) throw new functions.https.HttpsError('not-found','Invite not found');
+  const invite = inviteSnap.data();
+  const inviterId = invite!.inviterId;
+  const partnerId = context.auth.uid;
+  if (inviterId === partnerId) throw new functions.https.HttpsError('failed-precondition','Cannot accept your own invite');
+
+  // create couple doc and update both user docs atomically
+  const coupleRef = db.collection('couples').doc();
+  const batch = db.batch();
+  batch.set(coupleRef, {
+    partnerAId: inviterId,
+    partnerBId: partnerId,
+    startDate: admin.firestore.FieldValue.serverTimestamp(),
+    nextMeeting: null,
+    photoUrl: null,
+    timeZones: {},
+    createdAt: admin.firestore.FieldValue.serverTimestamp()
   });
+  const inviterUserRef = db.collection('users').doc(inviterId);
+  const partnerUserRef = db.collection('users').doc(partnerId);
+  batch.update(inviterUserRef, { coupleId: coupleRef.id });
+  batch.update(partnerUserRef, { coupleId: coupleRef.id });
+  batch.delete(db.collection('invites').doc(inviteId));
+  await batch.commit();
 
-// Scheduled: nightly push reminders for unanswered daily question (example every day at 07:00 UTC)
-export const scheduleReminders = functions.pubsub.schedule("0 7 * * *").timeZone("UTC").onRun(async (context) => {
-  return null;
+  return { coupleId: coupleRef.id };
 });
