@@ -1,0 +1,25 @@
+// Optional TypeScript version you can import into a React Native / web project
+export const tokens = {
+  colors: {
+    background: "#F6EFE6",
+    cardBackground: "#F9F6F2",
+    text: "#3B2E2C",
+    accent: "#E07A5F",
+    accentMuted: "#D9644A",
+    shadow: "rgba(40,30,28,0.06)"
+  },
+  typography: {
+    headingFont: "PlayfairDisplay",
+    bodyFont: "Inter",
+    sizes: {
+      h1: 28,
+      h2: 22,
+      h3: 18,
+      p1: 16,
+      p2: 14
+    }
+  },
+  spacing: { xs: 8, sm: 12, md: 20, lg: 28, xl: 40 },
+  radii: { card: 16, button: 12, avatar: 20 },
+  shadows: { card: "0 6px 20px rgba(40,30,28,0.06)" }
+};

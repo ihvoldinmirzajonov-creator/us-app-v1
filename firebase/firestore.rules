@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+
+    match /users/{userId} {
+      allow create: if signedIn();
+      allow read, update, delete: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /couples/{coupleId} {
+      allow read, write: if signedIn() && isCoupleMember(coupleId);
+    }
+
+    // Couple-scoped docs: require a coupleId field and membership
+    match /{collection}/{docId} {
+      allow create: if signedIn() && isCoupleScoped(collection) && request.resource.data.coupleId is string && isCoupleMemberId(request.resource.data.coupleId);
+      allow read, update, delete: if signedIn() && (isPublic(collection) || (resource.data.coupleId is string && isCoupleMemberId(resource.data.coupleId)));
+    }
+
+    function isCoupleMember(coupleId) {
+      return exists(/databases/$(database)/documents/couples/$(coupleId))
+        && (get(/databases/$(database)/documents/couples/$(coupleId)).data.partnerAId == request.auth.uid
+            || get(/databases/$(database)/documents/couples/$(coupleId)).data.partnerBId == request.auth.uid);
+    }
+
+    function isCoupleMemberId(coupleId) {
+      return isCoupleMember(coupleId);
+    }
+
+    function isCoupleScoped(name) {
+      return name in [
+        "answers","completedChallenges","messages","loveNotes",
+        "memories","bucketListItems","games","gameQuestions","gameAnswers",
+        "importantDates"
+      ];
+    }
+
+    function isPublic(name) {
+      return name in ["questions","challenges"];
+    }
+  }
+}
